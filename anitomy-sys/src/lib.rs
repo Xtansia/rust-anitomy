@@ -4,7 +4,7 @@ use std::ffi::{CString, NulError};
 
 #[derive(Debug)]
 pub struct Elements {
-    elements: *mut ffi::elements_t,
+    elements: *const ffi::elements_t,
 }
 
 #[derive(Debug)]
@@ -36,8 +36,8 @@ impl Anitomy {
         Ok(ffi::anitomy_parse(self.anitomy, filename.as_ptr()))
     }
 
-    pub unsafe fn elements(&mut self) -> &mut Elements {
-        &mut self.elements
+    pub unsafe fn elements(&self) -> &Elements {
+        &self.elements
     }
 
     pub unsafe fn destroy(&mut self) {

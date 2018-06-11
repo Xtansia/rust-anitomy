@@ -13,7 +13,7 @@ pub struct anitomy_t {
 extern "C" {
     pub fn anitomy_new() -> *mut anitomy_t;
     pub fn anitomy_parse(anitomy: *mut anitomy_t, filename: *const c_char) -> bool;
-    pub fn anitomy_elements(anitomy: *mut anitomy_t) -> *mut elements_t;
+    pub fn anitomy_elements(anitomy: *const anitomy_t) -> *const elements_t;
     pub fn anitomy_destroy(anitomy: *mut anitomy_t);
 }
 
@@ -63,8 +63,10 @@ mod tests {
         unsafe {
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let elems = anitomy_elements(ani);
-            assert!(!elems.is_null());
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+            }
             anitomy_destroy(ani);
         }
     }
