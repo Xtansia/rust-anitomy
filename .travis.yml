@@ -39,6 +39,7 @@ matrix:
 before_install:
   - set -e
   - eval "${MATRIX_EVAL}"
+  - export CC CXX
 
 script:
   - cargo build --verbose --all
