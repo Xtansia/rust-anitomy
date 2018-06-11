@@ -2,9 +2,60 @@ pub mod ffi;
 
 use std::ffi::{CString, NulError};
 
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ElementCategory {
+    AnimeSeason = ffi::kElementAnimeSeason,
+    AnimeSeasonPrefix = ffi::kElementAnimeSeasonPrefix,
+    AnimeTitle = ffi::kElementAnimeTitle,
+    AnimeType = ffi::kElementAnimeType,
+    AnimeYear = ffi::kElementAnimeYear,
+    AudioTerm = ffi::kElementAudioTerm,
+    DeviceCompatibility = ffi::kElementDeviceCompatibility,
+    EpisodeNumber = ffi::kElementEpisodeNumber,
+    EpisodeNumberAlt = ffi::kElementEpisodeNumberAlt,
+    EpisodePrefix = ffi::kElementEpisodePrefix,
+    EpisodeTitle = ffi::kElementEpisodeTitle,
+    FileChecksum = ffi::kElementFileChecksum,
+    FileExtension = ffi::kElementFileExtension,
+    FileName = ffi::kElementFileName,
+    Language = ffi::kElementLanguage,
+    Other = ffi::kElementOther,
+    ReleaseGroup = ffi::kElementReleaseGroup,
+    ReleaseInformation = ffi::kElementReleaseInformation,
+    ReleaseVersion = ffi::kElementReleaseVersion,
+    Source = ffi::kElementSource,
+    Subtitles = ffi::kElementSubtitles,
+    VideoResolution = ffi::kElementVideoResolution,
+    VideoTerm = ffi::kElementVideoTerm,
+    VolumeNumber = ffi::kElementVolumeNumber,
+    VolumePrefix = ffi::kElementVolumePrefix,
+    Unknown = ffi::kElementUnknown,
+}
+
 #[derive(Debug)]
 pub struct Elements {
     elements: *const ffi::elements_t,
+}
+
+impl Elements {
+    pub unsafe fn empty(&self, category: Option<ElementCategory>) -> bool {
+        match category {
+            Some(cat) => {
+                ffi::elements_empty_category(self.elements, cat as ffi::element_category_t)
+            }
+            None => ffi::elements_empty(self.elements),
+        }
+    }
+
+    pub unsafe fn count(&self, category: Option<ElementCategory>) -> usize {
+        match category {
+            Some(cat) => {
+                ffi::elements_count_category(self.elements, cat as ffi::element_category_t)
+            }
+            None => ffi::elements_count(self.elements),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -77,6 +128,48 @@ mod tests {
             let success = ani.parse("").unwrap();
             assert!(!success);
             ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_empty_good_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
+            assert!(success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(!empty);
+                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
+                assert!(!anititle_empty);
+                let size = elems.count(None);
+                assert!(size > 0);
+                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_count == 1);
+            }
+            ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_empty_bad_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse("").unwrap();
+            assert!(!success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(empty);
+                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_empty);
+                let size = elems.count(None);
+                assert!(size == 0);
+                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_count == 0);
+            }
+            ani.destroy()
         }
     }
 }
