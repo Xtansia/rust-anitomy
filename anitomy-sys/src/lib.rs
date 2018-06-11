@@ -23,13 +23,11 @@ impl Anitomy {
             if !elems.is_null() {
                 return Ok(Self {
                     anitomy: ani,
-                    elements: Elements {
-                        elements: elems,
-                    },
+                    elements: Elements { elements: elems },
                 });
             }
         }
-            
+
         Err(())
     }
 
@@ -39,7 +37,7 @@ impl Anitomy {
     }
 
     pub unsafe fn elements(&mut self) -> &mut Elements {
-      &mut self.elements
+        &mut self.elements
     }
 
     pub unsafe fn destroy(&mut self) {
@@ -51,44 +49,34 @@ impl Anitomy {
 mod tests {
     use super::*;
 
-    const BLACK_BULLET_FILENAME: &'static str = "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
+    const BLACK_BULLET_FILENAME: &'static str =
+        "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
 
     #[test]
     fn anitomy_new_destroy() {
         unsafe {
-          let mut ani = Anitomy::new().unwrap();
-          ani.destroy();
+            let mut ani = Anitomy::new().unwrap();
+            ani.destroy();
         }
     }
 
     #[test]
-    fn anitomy_parse_good_input_success() {
+    fn anitomy_parse_good_input() {
         unsafe {
-          let mut ani = Anitomy::new().unwrap();
-          let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-          assert!(success);
-          ani.destroy();
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
+            assert!(success);
+            ani.destroy();
         }
     }
 
     #[test]
-    fn anitomy_parse_bad_input_fail() {
+    fn anitomy_parse_bad_input() {
         unsafe {
-          let mut ani = Anitomy::new().unwrap();
-          let success = ani.parse("").unwrap();
-          assert!(!success);
-          ani.destroy();
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse("").unwrap();
+            assert!(!success);
+            ani.destroy();
         }
     }
-
-    /*#[test]
-    fn anitomy_get_elements_not_null() {
-        unsafe {
-          let ani = anitomy_new();
-          assert!(!ani.is_null());
-          let elems = anitomy_elements(ani);
-          assert!(!elems.is_null());
-          anitomy_destroy(ani);
-        }
-    }*/
 }
