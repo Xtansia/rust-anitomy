@@ -1,6 +1,6 @@
 pub mod ffi;
 
-use std::ffi::{CString, NulError};
+use std::ffi::{CStr, CString, NulError};
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -55,6 +55,23 @@ impl Elements {
             }
             None => ffi::elements_count(self.elements),
         }
+    }
+
+    pub unsafe fn get(&self, category: ElementCategory) -> String {
+        let rawval = ffi::elements_get(self.elements, category as ffi::element_category_t);
+        let val = CStr::from_ptr(rawval).to_string_lossy().into_owned();
+        ffi::string_free(rawval);
+        val
+    }
+
+    pub unsafe fn get_all(&self, category: ElementCategory) -> Vec<String> {
+        let rawvals = ffi::elements_get_all(self.elements, category as ffi::element_category_t);
+        let vals = (0..rawvals.size)
+            .map(|i| *rawvals.data.offset(i as isize))
+            .map(|c_str| CStr::from_ptr(c_str).to_string_lossy().into_owned())
+            .collect();
+        ffi::array_free(rawvals);
+        vals
     }
 }
 
@@ -168,6 +185,98 @@ mod tests {
                 assert!(size == 0);
                 let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
                 assert!(anititle_count == 0);
+            }
+            ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_get_good_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
+            assert!(success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(!empty);
+                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
+                assert!(!anititle_empty);
+                let size = elems.count(None);
+                assert!(size > 0);
+                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_count == 1);
+                let anititle = elems.get(ElementCategory::AnimeTitle);
+                assert_eq!(anititle, "Black Bullet");
+            }
+            ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_get_bad_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse("").unwrap();
+            assert!(!success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(empty);
+                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_empty);
+                let size = elems.count(None);
+                assert!(size == 0);
+                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
+                assert!(anititle_count == 0);
+                let anititle = elems.get(ElementCategory::AnimeTitle);
+                assert_eq!(anititle, "");
+            }
+            ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_get_all_good_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
+            assert!(success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(!empty);
+                let epnums_empty = elems.empty(Some(ElementCategory::EpisodeNumber));
+                assert!(!epnums_empty);
+                let size = elems.count(None);
+                assert!(size > 0);
+                let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
+                assert!(epnums_count == 2);
+                let epnums = elems.get_all(ElementCategory::EpisodeNumber);
+                assert_eq!(epnums, ["11", "12"]);
+            }
+            ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_get_all_bad_input() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse("").unwrap();
+            assert!(!success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(empty);
+                let epnums_empty = elems.empty(Some(ElementCategory::EpisodeNumber));
+                assert!(epnums_empty);
+                let size = elems.count(None);
+                assert!(size == 0);
+                let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
+                assert!(epnums_count == 0);
+                let epnums = elems.get_all(ElementCategory::EpisodeNumber);
+                assert_eq!(epnums, Vec::<String>::new());
             }
             ani.destroy()
         }
