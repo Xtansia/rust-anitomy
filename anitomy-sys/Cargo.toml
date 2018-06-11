@@ -1,0 +1,11 @@
+[package]
+name = "anitomy-sys"
+version = "0.1.0"
+description = "Bindings for Anitomy"
+keywords = ["anitomy", "anime", "filenames", "parsing", "bindings"]
+authors = ["Thomas Farr <xtansia@xtansia.com>"]
+license = "MPL-2.0"
+homepage = "https://github.com/Xtansia/anitomy-rs"
+repository = "https://github.com/Xtansia/anitomy-rs"
+
+[dependencies]
