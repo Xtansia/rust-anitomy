@@ -45,6 +45,16 @@ extern "C" {
 }
 
 #[repr(C)]
+pub struct element_pair_t {
+    _unused: [u8; 0],
+}
+
+extern "C" {
+    pub fn element_pair_category(element_pair: *const element_pair_t) -> element_category_t;
+    pub fn element_pair_value(element_pair: *const element_pair_t) -> *mut c_char;
+}
+
+#[repr(C)]
 pub struct elements_t {
     _unused: [u8; 0],
 }
@@ -60,6 +70,7 @@ extern "C" {
         elements: *const elements_t,
         category: element_category_t,
     ) -> usize;
+    pub fn elements_at(elements: *const elements_t, pos: usize) -> *const element_pair_t;
     pub fn elements_get(elements: *const elements_t, category: element_category_t) -> *mut c_char;
     pub fn elements_get_all(
         elements: *const elements_t,
@@ -310,6 +321,36 @@ mod tests {
                     vals
                 };
                 assert_eq!(epnums, Vec::<String>::new());
+            }
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_at() {
+        unsafe {
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let success = anitomy_parse(ani, filename.as_ptr());
+            assert!(success);
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                let empty = elements_empty(elems);
+                assert!(!empty);
+                let size = elements_count(elems);
+                assert!(size > 0);
+                let pair = elements_at(elems, 0);
+                let category = element_pair_category(pair);
+                let value = {
+                    let rawstr = element_pair_value(pair);
+                    let val = CStr::from_ptr(rawstr).to_str().unwrap().to_owned();
+                    string_free(rawstr);
+                    val
+                };
+                assert_eq!(category, kElementFileExtension);
+                assert_eq!(value, "mp4");
             }
             anitomy_destroy(ani);
         }

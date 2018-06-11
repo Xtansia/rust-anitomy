@@ -33,39 +33,98 @@ pub enum ElementCategory {
     Unknown = ffi::kElementUnknown,
 }
 
-#[derive(Debug)]
+impl From<ffi::element_category_t> for ElementCategory {
+    fn from(val: ffi::element_category_t) -> ElementCategory {
+        match val {
+            ffi::kElementAnimeSeason => ElementCategory::AnimeSeason,
+            ffi::kElementAnimeSeasonPrefix => ElementCategory::AnimeSeasonPrefix,
+            ffi::kElementAnimeTitle => ElementCategory::AnimeTitle,
+            ffi::kElementAnimeType => ElementCategory::AnimeType,
+            ffi::kElementAnimeYear => ElementCategory::AnimeYear,
+            ffi::kElementAudioTerm => ElementCategory::AudioTerm,
+            ffi::kElementDeviceCompatibility => ElementCategory::DeviceCompatibility,
+            ffi::kElementEpisodeNumber => ElementCategory::EpisodeNumber,
+            ffi::kElementEpisodeNumberAlt => ElementCategory::EpisodeNumberAlt,
+            ffi::kElementEpisodePrefix => ElementCategory::EpisodePrefix,
+            ffi::kElementEpisodeTitle => ElementCategory::EpisodeTitle,
+            ffi::kElementFileChecksum => ElementCategory::FileChecksum,
+            ffi::kElementFileExtension => ElementCategory::FileExtension,
+            ffi::kElementFileName => ElementCategory::FileName,
+            ffi::kElementLanguage => ElementCategory::Language,
+            ffi::kElementOther => ElementCategory::Other,
+            ffi::kElementReleaseGroup => ElementCategory::ReleaseGroup,
+            ffi::kElementReleaseInformation => ElementCategory::ReleaseInformation,
+            ffi::kElementReleaseVersion => ElementCategory::ReleaseVersion,
+            ffi::kElementSource => ElementCategory::Source,
+            ffi::kElementSubtitles => ElementCategory::Subtitles,
+            ffi::kElementVideoResolution => ElementCategory::VideoResolution,
+            ffi::kElementVideoTerm => ElementCategory::VideoTerm,
+            ffi::kElementVolumeNumber => ElementCategory::VolumeNumber,
+            ffi::kElementVolumePrefix => ElementCategory::VolumePrefix,
+            _ => ElementCategory::Unknown,
+        }
+    }
+}
+
+#[repr(C)]
+pub struct ElementPair {
+    element_pair: ffi::element_pair_t,
+}
+
+impl ElementPair {
+    pub unsafe fn category(&self) -> ElementCategory {
+        ElementCategory::from(ffi::element_pair_category(&self.element_pair))
+    }
+
+    pub unsafe fn value(&self) -> String {
+        let rawval = ffi::element_pair_value(&self.element_pair);
+        let val = CStr::from_ptr(rawval).to_string_lossy().into_owned();
+        ffi::string_free(rawval);
+        val
+    }
+}
+
+#[repr(C)]
 pub struct Elements {
-    elements: *const ffi::elements_t,
+    elements: ffi::elements_t,
 }
 
 impl Elements {
     pub unsafe fn empty(&self, category: Option<ElementCategory>) -> bool {
         match category {
             Some(cat) => {
-                ffi::elements_empty_category(self.elements, cat as ffi::element_category_t)
+                ffi::elements_empty_category(&self.elements, cat as ffi::element_category_t)
             }
-            None => ffi::elements_empty(self.elements),
+            None => ffi::elements_empty(&self.elements),
         }
     }
 
     pub unsafe fn count(&self, category: Option<ElementCategory>) -> usize {
         match category {
             Some(cat) => {
-                ffi::elements_count_category(self.elements, cat as ffi::element_category_t)
+                ffi::elements_count_category(&self.elements, cat as ffi::element_category_t)
             }
-            None => ffi::elements_count(self.elements),
+            None => ffi::elements_count(&self.elements),
+        }
+    }
+
+    pub unsafe fn at(&self, pos: usize) -> Option<&ElementPair> {
+        if pos < self.count(None) {
+            Some(&*(ffi::elements_at(&self.elements, pos) as *const ElementPair))
+        } else {
+            None
         }
     }
 
     pub unsafe fn get(&self, category: ElementCategory) -> String {
-        let rawval = ffi::elements_get(self.elements, category as ffi::element_category_t);
+        let rawval = ffi::elements_get(&self.elements, category as ffi::element_category_t);
         let val = CStr::from_ptr(rawval).to_string_lossy().into_owned();
         ffi::string_free(rawval);
         val
     }
 
     pub unsafe fn get_all(&self, category: ElementCategory) -> Vec<String> {
-        let rawvals = ffi::elements_get_all(self.elements, category as ffi::element_category_t);
+        let rawvals = ffi::elements_get_all(&self.elements, category as ffi::element_category_t);
         let vals = (0..rawvals.size)
             .map(|i| *rawvals.data.offset(i as isize))
             .map(|c_str| CStr::from_ptr(c_str).to_string_lossy().into_owned())
@@ -78,7 +137,6 @@ impl Elements {
 #[derive(Debug)]
 pub struct Anitomy {
     anitomy: *mut ffi::anitomy_t,
-    elements: Elements,
 }
 
 impl Anitomy {
@@ -86,17 +144,10 @@ impl Anitomy {
         let ani = ffi::anitomy_new();
 
         if !ani.is_null() {
-            let elems = ffi::anitomy_elements(ani);
-
-            if !elems.is_null() {
-                return Ok(Self {
-                    anitomy: ani,
-                    elements: Elements { elements: elems },
-                });
-            }
+            Ok(Self { anitomy: ani })
+        } else {
+            Err(())
         }
-
-        Err(())
     }
 
     pub unsafe fn parse(&mut self, filename: &str) -> Result<bool, NulError> {
@@ -105,7 +156,7 @@ impl Anitomy {
     }
 
     pub unsafe fn elements(&self) -> &Elements {
-        &self.elements
+        &*(ffi::anitomy_elements(self.anitomy) as *const Elements)
     }
 
     pub unsafe fn destroy(&mut self) {
@@ -279,6 +330,28 @@ mod tests {
                 assert_eq!(epnums, Vec::<String>::new());
             }
             ani.destroy()
+        }
+    }
+
+    #[test]
+    fn anitomy_elements_at() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
+            assert!(success);
+            {
+                let elems = ani.elements();
+                let empty = elems.empty(None);
+                assert!(!empty);
+                let size = elems.count(None);
+                assert!(size > 0);
+                let pair = elems.at(0).unwrap();
+                let category = pair.category();
+                let value = pair.value();
+                assert_eq!(category, ElementCategory::FileExtension);
+                assert_eq!(value, "mp4");
+            }
+            ani.destroy();
         }
     }
 }
