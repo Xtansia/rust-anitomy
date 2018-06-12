@@ -16,21 +16,6 @@ matrix:
             - g++-5
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-3.9
-          packages:
-            - clang-3.9
-            - g++-5
-      env:
-        - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
-    - os: osx
-      osx_image: xcode8.3
-      env:
-        - MATRIX_EVAL="brew update && rm '/usr/local/include/c++' && brew install gcc@5 && CC=gcc-5 && CXX=g++-5"
     - os: osx
       osx_image: xcode8.3
       env:
