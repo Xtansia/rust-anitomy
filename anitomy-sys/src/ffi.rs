@@ -1,7 +1,12 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
+use std::ffi::CStr;
 use std::os::raw::c_char;
+
+pub unsafe fn raw_into_string(raw_string: *const c_char) -> String {
+    CStr::from_ptr(raw_string).to_string_lossy().into_owned()
+}
 
 pub type element_category_t = i32;
 pub const kElementIterateFirst: element_category_t = 0;
@@ -33,25 +38,25 @@ pub const kElementVolumePrefix: element_category_t = 24;
 pub const kElementIterateLast: element_category_t = 25;
 pub const kElementUnknown: element_category_t = kElementIterateLast;
 
-#[repr(C)]
-pub struct string_array_t {
-    pub data: *mut *mut c_char,
-    pub size: usize,
-}
-
 extern "C" {
     pub fn string_free(string: *mut c_char);
-    pub fn array_free(array: string_array_t);
 }
 
 #[repr(C)]
-pub struct element_pair_t {
+pub struct string_array_t {
     _unused: [u8; 0],
 }
 
 extern "C" {
-    pub fn element_pair_category(element_pair: *const element_pair_t) -> element_category_t;
-    pub fn element_pair_value(element_pair: *const element_pair_t) -> *mut c_char;
+    pub fn string_array_size(array: *const string_array_t) -> usize;
+    pub fn string_array_at(array: *const string_array_t, pos: usize) -> *const c_char;
+    pub fn string_array_free(array: *mut string_array_t);
+}
+
+#[repr(C)]
+pub struct element_pair_t {
+    pub category: element_category_t,
+    pub value: *mut c_char,
 }
 
 #[repr(C)]
@@ -70,12 +75,12 @@ extern "C" {
         elements: *const elements_t,
         category: element_category_t,
     ) -> usize;
-    pub fn elements_at(elements: *const elements_t, pos: usize) -> *const element_pair_t;
+    pub fn elements_at(elements: *const elements_t, pos: usize) -> element_pair_t;
     pub fn elements_get(elements: *const elements_t, category: element_category_t) -> *mut c_char;
     pub fn elements_get_all(
         elements: *const elements_t,
         category: element_category_t,
-    ) -> string_array_t;
+    ) -> *mut string_array_t;
 }
 
 #[repr(C)]
@@ -93,7 +98,7 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::{CStr, CString};
+    use std::ffi::CString;
 
     const BLACK_BULLET_FILENAME: &'static str =
         "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
@@ -213,7 +218,7 @@ mod tests {
                 assert!(anititle_count == 1);
                 let anititle = {
                     let rawstr = elements_get(elems, kElementAnimeTitle);
-                    let val = CStr::from_ptr(rawstr).to_str().unwrap().to_owned();
+                    let val = raw_into_string(rawstr);
                     string_free(rawstr);
                     val
                 };
@@ -244,7 +249,7 @@ mod tests {
                 assert!(anititle_count == 0);
                 let anititle = {
                     let rawstr = elements_get(elems, kElementAnimeTitle);
-                    let val = CStr::from_ptr(rawstr).to_str().unwrap().to_owned();
+                    let val = raw_into_string(rawstr);
                     string_free(rawstr);
                     val
                 };
@@ -275,13 +280,13 @@ mod tests {
                 assert!(epnums_count == 2);
                 let epnums: Vec<_> = {
                     let array = elements_get_all(elems, kElementEpisodeNumber);
-                    assert!(!array.data.is_null());
-                    assert!(array.size == 2);
-                    let vals = (0..array.size)
-                        .map(|i| *array.data.offset(i as isize))
-                        .map(|c_str| CStr::from_ptr(c_str).to_string_lossy().into_owned())
+                    assert!(!array.is_null());
+                    let size = string_array_size(array);
+                    assert!(size == 2);
+                    let vals = (0..size)
+                        .map(|i| raw_into_string(string_array_at(array, i)))
                         .collect();
-                    array_free(array);
+                    string_array_free(array);
                     vals
                 };
                 assert_eq!(epnums, ["11", "12"]);
@@ -309,18 +314,10 @@ mod tests {
                 assert!(size == 0);
                 let epnums_count = elements_count_category(elems, kElementEpisodeNumber);
                 assert!(epnums_count == 0);
-                let epnums: Vec<_> = {
-                    let array = elements_get_all(elems, kElementEpisodeNumber);
-                    assert!(!array.data.is_null());
-                    assert!(array.size == 0);
-                    let vals = (0..array.size)
-                        .map(|i| *array.data.offset(i as isize))
-                        .map(|c_str| CStr::from_ptr(c_str).to_string_lossy().into_owned())
-                        .collect();
-                    array_free(array);
-                    vals
-                };
-                assert_eq!(epnums, Vec::<String>::new());
+                let epnums = elements_get_all(elems, kElementEpisodeNumber);
+                assert!(!epnums.is_null());
+                assert!(string_array_size(epnums) == 0);
+                string_array_free(epnums);
             }
             anitomy_destroy(ani);
         }
@@ -342,14 +339,9 @@ mod tests {
                 let size = elements_count(elems);
                 assert!(size > 0);
                 let pair = elements_at(elems, 0);
-                let category = element_pair_category(pair);
-                let value = {
-                    let rawstr = element_pair_value(pair);
-                    let val = CStr::from_ptr(rawstr).to_str().unwrap().to_owned();
-                    string_free(rawstr);
-                    val
-                };
-                assert_eq!(category, kElementFileExtension);
+                let value = raw_into_string(pair.value);
+                string_free(pair.value);
+                assert_eq!(pair.category, kElementFileExtension);
                 assert_eq!(value, "mp4");
             }
             anitomy_destroy(ani);

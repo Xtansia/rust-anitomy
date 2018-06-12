@@ -1,6 +1,6 @@
 pub mod ffi;
 
-use std::ffi::{CStr, CString, NulError};
+use std::ffi::{CString, NulError};
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -66,23 +66,7 @@ impl From<ffi::element_category_t> for ElementCategory {
     }
 }
 
-#[repr(C)]
-pub struct ElementPair {
-    element_pair: ffi::element_pair_t,
-}
-
-impl ElementPair {
-    pub unsafe fn category(&self) -> ElementCategory {
-        ElementCategory::from(ffi::element_pair_category(&self.element_pair))
-    }
-
-    pub unsafe fn value(&self) -> String {
-        let rawval = ffi::element_pair_value(&self.element_pair);
-        let val = CStr::from_ptr(rawval).to_string_lossy().into_owned();
-        ffi::string_free(rawval);
-        val
-    }
-}
+pub struct ElementPair(ElementCategory, String);
 
 #[repr(C)]
 pub struct Elements {
@@ -108,9 +92,12 @@ impl Elements {
         }
     }
 
-    pub unsafe fn at(&self, pos: usize) -> Option<&ElementPair> {
+    pub unsafe fn at(&self, pos: usize) -> Option<ElementPair> {
         if pos < self.count(None) {
-            Some(&*(ffi::elements_at(&self.elements, pos) as *const ElementPair))
+            let pair = ffi::elements_at(&self.elements, pos);
+            let value = ffi::raw_into_string(pair.value);
+            ffi::string_free(pair.value);
+            Some(ElementPair(ElementCategory::from(pair.category), value))
         } else {
             None
         }
@@ -118,18 +105,18 @@ impl Elements {
 
     pub unsafe fn get(&self, category: ElementCategory) -> String {
         let rawval = ffi::elements_get(&self.elements, category as ffi::element_category_t);
-        let val = CStr::from_ptr(rawval).to_string_lossy().into_owned();
+        let val = ffi::raw_into_string(rawval);
         ffi::string_free(rawval);
         val
     }
 
     pub unsafe fn get_all(&self, category: ElementCategory) -> Vec<String> {
         let rawvals = ffi::elements_get_all(&self.elements, category as ffi::element_category_t);
-        let vals = (0..rawvals.size)
-            .map(|i| *rawvals.data.offset(i as isize))
-            .map(|c_str| CStr::from_ptr(c_str).to_string_lossy().into_owned())
+        let size = ffi::string_array_size(rawvals);
+        let vals = (0..size)
+            .map(|i| ffi::raw_into_string(ffi::string_array_at(rawvals, i)))
             .collect();
-        ffi::array_free(rawvals);
+        ffi::string_array_free(rawvals);
         vals
     }
 }
@@ -346,10 +333,8 @@ mod tests {
                 let size = elems.count(None);
                 assert!(size > 0);
                 let pair = elems.at(0).unwrap();
-                let category = pair.category();
-                let value = pair.value();
-                assert_eq!(category, ElementCategory::FileExtension);
-                assert_eq!(value, "mp4");
+                assert_eq!(pair.0, ElementCategory::FileExtension);
+                assert_eq!(pair.1, "mp4");
             }
             ani.destroy();
         }
