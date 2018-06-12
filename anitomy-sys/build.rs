@@ -1,12 +1,20 @@
 extern crate cc;
 
 fn main() {
-    if cfg!(not(target_env = "msvc")) {
-        std::env::set_var("CXXFLAGS", "-std=c++14");
+    let mut cc_build = cc::Build::new();
+    cc_build.cpp(true);
+    let compiler = cc_build.get_compiler();
+
+    if !compiler.is_like_msvc() {
+        cc_build.flag("-std=c++14");
+        
+        if compiler.is_like_clang() && cfg!(target_os = "macos") {
+            cc_build.cpp_set_stdlib(Some("c++"));
+            cc_build.flag("-mmacosx-version-min=10.7");
+        }
     }
 
-    cc::Build::new()
-        .cpp(true)
+    cc_build
         .file("anitomy-c/anitomy_c.cpp")
         .file("anitomy-c/anitomy/anitomy/anitomy.cpp")
         .file("anitomy-c/anitomy/anitomy/element.cpp")
