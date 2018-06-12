@@ -7,7 +7,7 @@ fn main() {
 
     if !compiler.is_like_msvc() {
         cc_build.flag("-std=c++14");
-        
+
         if compiler.is_like_clang() && cfg!(target_os = "macos") {
             cc_build.cpp_set_stdlib(Some("c++"));
             cc_build.flag("-mmacosx-version-min=10.7");

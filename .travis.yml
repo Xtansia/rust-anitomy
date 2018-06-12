@@ -4,6 +4,7 @@ dist: trusty
 
 rust:
   - stable
+  - nightly
 
 matrix:
   include:
