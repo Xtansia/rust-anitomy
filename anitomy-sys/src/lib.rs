@@ -66,7 +66,10 @@ impl From<ffi::element_category_t> for ElementCategory {
     }
 }
 
-pub struct ElementPair(ElementCategory, String);
+pub struct ElementPair {
+    category: ElementCategory,
+    value: String,
+}
 
 #[repr(C)]
 pub struct Elements {
@@ -97,7 +100,10 @@ impl Elements {
             let pair = ffi::elements_at(&self.elements, pos);
             let value = ffi::raw_into_string(pair.value);
             ffi::string_free(pair.value);
-            Some(ElementPair(ElementCategory::from(pair.category), value))
+            Some(ElementPair {
+                category: ElementCategory::from(pair.category),
+                value: value,
+            })
         } else {
             None
         }
@@ -333,8 +339,8 @@ mod tests {
                 let size = elems.count(None);
                 assert!(size > 0);
                 let pair = elems.at(0).unwrap();
-                assert_eq!(pair.0, ElementCategory::FileExtension);
-                assert_eq!(pair.1, "mp4");
+                assert_eq!(pair.category, ElementCategory::FileExtension);
+                assert_eq!(pair.value, "mp4");
             }
             ani.destroy();
         }
