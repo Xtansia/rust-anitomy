@@ -242,12 +242,6 @@ mod tests {
             assert!(success);
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(!empty);
-                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
-                assert!(!anititle_empty);
-                let size = elems.count(None);
-                assert!(size > 0);
                 let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
                 assert!(anititle_count == 1);
                 let anititle = elems.get(ElementCategory::AnimeTitle);
@@ -265,12 +259,6 @@ mod tests {
             assert!(!success);
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(empty);
-                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_empty);
-                let size = elems.count(None);
-                assert!(size == 0);
                 let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
                 assert!(anititle_count == 0);
                 let anititle = elems.get(ElementCategory::AnimeTitle);
@@ -288,12 +276,6 @@ mod tests {
             assert!(success);
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(!empty);
-                let epnums_empty = elems.empty(Some(ElementCategory::EpisodeNumber));
-                assert!(!epnums_empty);
-                let size = elems.count(None);
-                assert!(size > 0);
                 let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
                 assert!(epnums_count == 2);
                 let epnums = elems.get_all(ElementCategory::EpisodeNumber);
@@ -311,12 +293,6 @@ mod tests {
             assert!(!success);
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(empty);
-                let epnums_empty = elems.empty(Some(ElementCategory::EpisodeNumber));
-                assert!(epnums_empty);
-                let size = elems.count(None);
-                assert!(size == 0);
                 let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
                 assert!(epnums_count == 0);
                 let epnums = elems.get_all(ElementCategory::EpisodeNumber);
@@ -334,11 +310,7 @@ mod tests {
             assert!(success);
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(!empty);
-                let size = elems.count(None);
-                assert!(size > 0);
-                let pair = elems.at(0).unwrap();
+                let pair = elems.at(0).expect("at least one element");
                 assert_eq!(pair.category, ElementCategory::FileExtension);
                 assert_eq!(pair.value, "mp4");
             }

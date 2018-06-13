@@ -208,12 +208,6 @@ mod tests {
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(!empty);
-                let anititle_empty = elements_empty_category(elems, kElementAnimeTitle);
-                assert!(!anititle_empty);
-                let size = elements_count(elems);
-                assert!(size > 0);
                 let anititle_count = elements_count_category(elems, kElementAnimeTitle);
                 assert!(anititle_count == 1);
                 let anititle = {
@@ -239,12 +233,6 @@ mod tests {
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(empty);
-                let anititle_empty = elements_empty_category(elems, kElementAnimeTitle);
-                assert!(anititle_empty);
-                let size = elements_count(elems);
-                assert!(size == 0);
                 let anititle_count = elements_count_category(elems, kElementAnimeTitle);
                 assert!(anititle_count == 0);
                 let anititle = {
@@ -270,12 +258,6 @@ mod tests {
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(!empty);
-                let epnums_empty = elements_empty_category(elems, kElementEpisodeNumber);
-                assert!(!epnums_empty);
-                let size = elements_count(elems);
-                assert!(size > 0);
                 let epnums_count = elements_count_category(elems, kElementEpisodeNumber);
                 assert!(epnums_count == 2);
                 let epnums: Vec<_> = {
@@ -306,12 +288,6 @@ mod tests {
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(empty);
-                let epnums_empty = elements_empty_category(elems, kElementEpisodeNumber);
-                assert!(epnums_empty);
-                let size = elements_count(elems);
-                assert!(size == 0);
                 let epnums_count = elements_count_category(elems, kElementEpisodeNumber);
                 assert!(epnums_count == 0);
                 let epnums = elements_get_all(elems, kElementEpisodeNumber);
@@ -334,8 +310,6 @@ mod tests {
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(!empty);
                 let size = elements_count(elems);
                 assert!(size > 0);
                 let pair = elements_at(elems, 0);
