@@ -118,9 +118,10 @@ impl From<ffi::element_category_t> for ElementCategory {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ElementPair {
-    category: ElementCategory,
-    value: String,
+    pub category: ElementCategory,
+    pub value: String,
 }
 
 #[repr(C)]
