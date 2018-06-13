@@ -176,8 +176,12 @@ mod tests {
     fn anitomy_parse_good_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-            assert!(success);
+
+            assert!(
+                ani.parse(BLACK_BULLET_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+
             ani.destroy();
         }
     }
@@ -186,8 +190,9 @@ mod tests {
     fn anitomy_parse_bad_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse("").unwrap();
-            assert!(!success);
+
+            assert!(!ani.parse("").expect("no nul chars in filename"));
+
             ani.destroy();
         }
     }
@@ -196,19 +201,19 @@ mod tests {
     fn anitomy_elements_empty_good_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-            assert!(success);
+
+            assert!(
+                ani.parse(BLACK_BULLET_FILENAME)
+                    .expect("no nul chars in filename")
+            );
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(!empty);
-                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
-                assert!(!anititle_empty);
-                let size = elems.count(None);
-                assert!(size > 0);
-                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_count == 1);
+                assert!(!elems.empty(None));
+                assert!(!elems.empty(Some(ElementCategory::AnimeTitle)));
+                assert!(elems.count(None) > 0);
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
             }
+
             ani.destroy()
         }
     }
@@ -217,19 +222,16 @@ mod tests {
     fn anitomy_elements_empty_bad_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse("").unwrap();
-            assert!(!success);
+
+            assert!(!ani.parse("").expect("no nul chars in filename"));
             {
                 let elems = ani.elements();
-                let empty = elems.empty(None);
-                assert!(empty);
-                let anititle_empty = elems.empty(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_empty);
-                let size = elems.count(None);
-                assert!(size == 0);
-                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_count == 0);
+                assert!(elems.empty(None));
+                assert!(elems.empty(Some(ElementCategory::AnimeTitle)));
+                assert!(elems.count(None) == 0);
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
             }
+
             ani.destroy()
         }
     }
@@ -238,15 +240,17 @@ mod tests {
     fn anitomy_elements_get_good_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-            assert!(success);
+
+            assert!(
+                ani.parse(BLACK_BULLET_FILENAME)
+                    .expect("no nul chars in filename")
+            );
             {
                 let elems = ani.elements();
-                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_count == 1);
-                let anititle = elems.get(ElementCategory::AnimeTitle);
-                assert_eq!(anititle, "Black Bullet");
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert_eq!(elems.get(ElementCategory::AnimeTitle), "Black Bullet");
             }
+
             ani.destroy()
         }
     }
@@ -255,15 +259,14 @@ mod tests {
     fn anitomy_elements_get_bad_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse("").unwrap();
-            assert!(!success);
+
+            assert!(!ani.parse("").expect("no nul chars in filename"));
             {
                 let elems = ani.elements();
-                let anititle_count = elems.count(Some(ElementCategory::AnimeTitle));
-                assert!(anititle_count == 0);
-                let anititle = elems.get(ElementCategory::AnimeTitle);
-                assert_eq!(anititle, "");
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
+                assert_eq!(elems.get(ElementCategory::AnimeTitle), "");
             }
+
             ani.destroy()
         }
     }
@@ -272,15 +275,17 @@ mod tests {
     fn anitomy_elements_get_all_good_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-            assert!(success);
+
+            assert!(
+                ani.parse(BLACK_BULLET_FILENAME)
+                    .expect("no nul chars in filename")
+            );
             {
                 let elems = ani.elements();
-                let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
-                assert!(epnums_count == 2);
-                let epnums = elems.get_all(ElementCategory::EpisodeNumber);
-                assert_eq!(epnums, ["11", "12"]);
+                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 2);
+                assert_eq!(elems.get_all(ElementCategory::EpisodeNumber), ["11", "12"]);
             }
+
             ani.destroy()
         }
     }
@@ -289,15 +294,17 @@ mod tests {
     fn anitomy_elements_get_all_bad_input() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse("").unwrap();
-            assert!(!success);
+
+            assert!(!ani.parse("").expect("no nul chars in filename"));
             {
                 let elems = ani.elements();
-                let epnums_count = elems.count(Some(ElementCategory::EpisodeNumber));
-                assert!(epnums_count == 0);
-                let epnums = elems.get_all(ElementCategory::EpisodeNumber);
-                assert_eq!(epnums, Vec::<String>::new());
+                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+                assert_eq!(
+                    elems.get_all(ElementCategory::EpisodeNumber),
+                    Vec::<String>::new()
+                );
             }
+
             ani.destroy()
         }
     }
@@ -306,14 +313,18 @@ mod tests {
     fn anitomy_elements_at() {
         unsafe {
             let mut ani = Anitomy::new().unwrap();
-            let success = ani.parse(BLACK_BULLET_FILENAME).unwrap();
-            assert!(success);
+
+            assert!(
+                ani.parse(BLACK_BULLET_FILENAME)
+                    .expect("no nul chars in filename")
+            );
             {
                 let elems = ani.elements();
                 let pair = elems.at(0).expect("at least one element");
                 assert_eq!(pair.category, ElementCategory::FileExtension);
                 assert_eq!(pair.value, "mp4");
             }
+
             ani.destroy();
         }
     }

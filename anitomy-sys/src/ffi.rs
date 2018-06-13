@@ -103,6 +103,13 @@ mod tests {
     const BLACK_BULLET_FILENAME: &'static str =
         "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
 
+    unsafe fn get_element(elems: *const elements_t, cat: element_category_t) -> String {
+        let cstr = elements_get(elems, cat);
+        let val = raw_into_string(cstr);
+        string_free(cstr);
+        val
+    }
+
     #[test]
     fn anitomy_new_destroy() {
         unsafe {
@@ -115,11 +122,12 @@ mod tests {
     #[test]
     fn anitomy_parse_good_input() {
         unsafe {
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(success);
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+
             anitomy_destroy(ani);
         }
     }
@@ -127,11 +135,12 @@ mod tests {
     #[test]
     fn anitomy_parse_bad_input() {
         unsafe {
+            let filename = CString::new("").unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new("").unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(!success);
+
+            assert!(!anitomy_parse(ani, filename.as_ptr()));
+
             anitomy_destroy(ani);
         }
     }
@@ -141,10 +150,9 @@ mod tests {
         unsafe {
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            {
-                let elems = anitomy_elements(ani);
-                assert!(!elems.is_null());
-            }
+
+            assert!(!anitomy_elements(ani).is_null());
+
             anitomy_destroy(ani);
         }
     }
@@ -152,23 +160,20 @@ mod tests {
     #[test]
     fn anitomy_elements_empty_good_input() {
         unsafe {
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(success);
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(!empty);
-                let anititle_empty = elements_empty_category(elems, kElementAnimeTitle);
-                assert!(!anititle_empty);
-                let size = elements_count(elems);
-                assert!(size > 0);
-                let anititle_count = elements_count_category(elems, kElementAnimeTitle);
-                assert!(anititle_count == 1);
+                assert!(!elements_empty(elems));
+                assert!(!elements_empty_category(elems, kElementAnimeTitle));
+                assert!(elements_count(elems) > 0);
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 1);
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -176,23 +181,20 @@ mod tests {
     #[test]
     fn anitomy_elements_empty_bad_input() {
         unsafe {
+            let filename = CString::new("").unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new("").unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(!success);
+
+            assert!(!anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let empty = elements_empty(elems);
-                assert!(empty);
-                let anititle_empty = elements_empty_category(elems, kElementAnimeTitle);
-                assert!(anititle_empty);
-                let size = elements_count(elems);
-                assert!(size == 0);
-                let anititle_count = elements_count_category(elems, kElementAnimeTitle);
-                assert!(anititle_count == 0);
+                assert!(elements_empty(elems));
+                assert!(elements_empty_category(elems, kElementAnimeTitle));
+                assert!(elements_count(elems) == 0);
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 0);
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -200,24 +202,18 @@ mod tests {
     #[test]
     fn anitomy_elements_get_good_input() {
         unsafe {
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(success);
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let anititle_count = elements_count_category(elems, kElementAnimeTitle);
-                assert!(anititle_count == 1);
-                let anititle = {
-                    let rawstr = elements_get(elems, kElementAnimeTitle);
-                    let val = raw_into_string(rawstr);
-                    string_free(rawstr);
-                    val
-                };
-                assert_eq!(anititle, "Black Bullet");
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 1);
+                assert_eq!(get_element(elems, kElementAnimeTitle), "Black Bullet");
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -225,24 +221,18 @@ mod tests {
     #[test]
     fn anitomy_elements_get_bad_input() {
         unsafe {
+            let filename = CString::new("").unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new("").unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(!success);
+
+            assert!(!anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let anititle_count = elements_count_category(elems, kElementAnimeTitle);
-                assert!(anititle_count == 0);
-                let anititle = {
-                    let rawstr = elements_get(elems, kElementAnimeTitle);
-                    let val = raw_into_string(rawstr);
-                    string_free(rawstr);
-                    val
-                };
-                assert_eq!(anititle, "");
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 0);
+                assert_eq!(get_element(elems, kElementAnimeTitle), "");
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -250,29 +240,31 @@ mod tests {
     #[test]
     fn anitomy_elements_get_all_good_input() {
         unsafe {
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(success);
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let epnums_count = elements_count_category(elems, kElementEpisodeNumber);
-                assert!(epnums_count == 2);
-                let epnums: Vec<_> = {
-                    let array = elements_get_all(elems, kElementEpisodeNumber);
-                    assert!(!array.is_null());
-                    let size = string_array_size(array);
-                    assert!(size == 2);
-                    let vals = (0..size)
-                        .map(|i| raw_into_string(string_array_at(array, i)))
-                        .collect();
-                    string_array_free(array);
-                    vals
-                };
-                assert_eq!(epnums, ["11", "12"]);
+                assert!(elements_count_category(elems, kElementEpisodeNumber) == 2);
+                assert_eq!(
+                    {
+                        let array = elements_get_all(elems, kElementEpisodeNumber);
+                        assert!(!array.is_null());
+                        let size = string_array_size(array);
+                        assert!(size == 2);
+                        let vals: Vec<_> = (0..size)
+                            .map(|i| raw_into_string(string_array_at(array, i)))
+                            .collect();
+                        string_array_free(array);
+                        vals
+                    },
+                    ["11", "12"]
+                );
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -280,21 +272,21 @@ mod tests {
     #[test]
     fn anitomy_elements_get_all_bad_input() {
         unsafe {
+            let filename = CString::new("").unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new("").unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(!success);
+
+            assert!(!anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let epnums_count = elements_count_category(elems, kElementEpisodeNumber);
-                assert!(epnums_count == 0);
+                assert!(elements_count_category(elems, kElementEpisodeNumber) == 0);
                 let epnums = elements_get_all(elems, kElementEpisodeNumber);
                 assert!(!epnums.is_null());
                 assert!(string_array_size(epnums) == 0);
                 string_array_free(epnums);
             }
+
             anitomy_destroy(ani);
         }
     }
@@ -302,22 +294,27 @@ mod tests {
     #[test]
     fn anitomy_elements_at() {
         unsafe {
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
             let ani = anitomy_new();
             assert!(!ani.is_null());
-            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
-            let success = anitomy_parse(ani, filename.as_ptr());
-            assert!(success);
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
             {
                 let elems = anitomy_elements(ani);
                 assert!(!elems.is_null());
-                let size = elements_count(elems);
-                assert!(size > 0);
+                assert!(elements_count(elems) > 0);
                 let pair = elements_at(elems, 0);
-                let value = raw_into_string(pair.value);
-                string_free(pair.value);
                 assert_eq!(pair.category, kElementFileExtension);
-                assert_eq!(value, "mp4");
+                assert_eq!(
+                    {
+                        let value = raw_into_string(pair.value);
+                        string_free(pair.value);
+                        value
+                    },
+                    "mp4"
+                );
             }
+
             anitomy_destroy(ani);
         }
     }
