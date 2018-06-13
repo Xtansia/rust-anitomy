@@ -4,6 +4,7 @@
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+#[inline]
 pub unsafe fn raw_into_string(raw_string: *const c_char) -> String {
     CStr::from_ptr(raw_string).to_string_lossy().into_owned()
 }
@@ -48,9 +49,25 @@ pub struct string_array_t {
 }
 
 extern "C" {
+    pub fn string_array_new() -> *mut string_array_t;
     pub fn string_array_size(array: *const string_array_t) -> usize;
     pub fn string_array_at(array: *const string_array_t, pos: usize) -> *const c_char;
+    pub fn string_array_add(array: *mut string_array_t, value: *const c_char);
     pub fn string_array_free(array: *mut string_array_t);
+}
+
+#[repr(C)]
+pub struct options_t {
+    _unused: [u8; 0],
+}
+
+extern "C" {
+    pub fn options_allowed_delimiters(options: *mut options_t, allowed_delimiters: *const c_char);
+    pub fn options_ignored_strings(options: *mut options_t, ignored_strings: *const string_array_t);
+    pub fn options_parse_episode_number(options: *mut options_t, parse_episode_number: bool);
+    pub fn options_parse_episode_title(options: *mut options_t, parse_episode_title: bool);
+    pub fn options_parse_file_extension(options: *mut options_t, parse_file_extension: bool);
+    pub fn options_parse_release_group(option: *mut options_t, parse_release_group: bool);
 }
 
 #[repr(C)]
@@ -92,6 +109,7 @@ extern "C" {
     pub fn anitomy_new() -> *mut anitomy_t;
     pub fn anitomy_parse(anitomy: *mut anitomy_t, filename: *const c_char) -> bool;
     pub fn anitomy_elements(anitomy: *const anitomy_t) -> *const elements_t;
+    pub fn anitomy_options(anitomy: *mut anitomy_t) -> *mut options_t;
     pub fn anitomy_destroy(anitomy: *mut anitomy_t);
 }
 
@@ -102,6 +120,7 @@ mod tests {
 
     const BLACK_BULLET_FILENAME: &'static str =
         "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
+    const TORADORA_FILENAME: &'static str = "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv";
 
     unsafe fn get_element(elems: *const elements_t, cat: element_category_t) -> String {
         let cstr = elements_get(elems, cat);
@@ -313,6 +332,214 @@ mod tests {
                     },
                     "mp4"
                 );
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_not_null() {
+        unsafe {
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(!anitomy_options(ani).is_null());
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_allowed_delimiters() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 1);
+                assert_eq!(get_element(elems, kElementAnimeTitle), "Toradora!");
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                let allowed_delimiters = CString::new("").unwrap();
+                options_allowed_delimiters(opts, allowed_delimiters.as_ptr());
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementAnimeTitle) == 1);
+                assert_eq!(get_element(elems, kElementAnimeTitle), "_Toradora!_");
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_ignored_strings() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeTitle) == 1);
+                assert_eq!(get_element(elems, kElementEpisodeTitle), "Tiger and Dragon");
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                let ignored_strings = string_array_new();
+                assert!(!ignored_strings.is_null());
+                let string = CString::new("Dragon").unwrap();
+                string_array_add(ignored_strings, string.as_ptr());
+                options_ignored_strings(opts, ignored_strings);
+                string_array_free(ignored_strings);
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeTitle) == 1);
+                assert_eq!(get_element(elems, kElementEpisodeTitle), "Tiger and");
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_episode_number() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeNumber) == 1);
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                options_parse_episode_number(opts, false);
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeNumber) == 0);
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_episode_title() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeTitle) == 1);
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                options_parse_episode_title(opts, false);
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementEpisodeTitle) == 0);
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_file_extension() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementFileExtension) == 1);
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                options_parse_file_extension(opts, false);
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementFileExtension) == 0);
+            }
+
+            anitomy_destroy(ani);
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_release_group() {
+        unsafe {
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let ani = anitomy_new();
+            assert!(!ani.is_null());
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementReleaseGroup) == 1);
+            }
+
+            {
+                let opts = anitomy_options(ani);
+                assert!(!opts.is_null());
+                options_parse_release_group(opts, false);
+            }
+
+            assert!(anitomy_parse(ani, filename.as_ptr()));
+            {
+                let elems = anitomy_elements(ani);
+                assert!(!elems.is_null());
+                assert!(elements_count_category(elems, kElementReleaseGroup) == 0);
             }
 
             anitomy_destroy(ani);

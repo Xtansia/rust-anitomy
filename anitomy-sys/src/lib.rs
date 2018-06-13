@@ -2,6 +2,52 @@ pub mod ffi;
 
 use std::ffi::{CString, NulError};
 
+#[repr(C)]
+pub struct Options {
+    options: ffi::options_t,
+}
+
+impl Options {
+    pub unsafe fn allowed_delimiters(&mut self, allowed_delimiters: &str) -> Result<(), NulError> {
+        let allowed_delimiters = CString::new(allowed_delimiters)?;
+        ffi::options_allowed_delimiters(&mut self.options, allowed_delimiters.as_ptr());
+        Ok(())
+    }
+
+    pub unsafe fn ignored_strings(&mut self, ignored_strings: &[&str]) -> Result<(), NulError> {
+        match ignored_strings
+            .iter()
+            .map(|string| CString::new(*string))
+            .collect::<Result<Vec<CString>, _>>()
+        {
+            Ok(ref ignored_strings) => {
+                let array = ffi::string_array_new();
+                ignored_strings
+                    .iter()
+                    .for_each(|cstr| ffi::string_array_add(array, cstr.as_ptr()));
+                ffi::options_ignored_strings(&mut self.options, array);
+                ffi::string_array_free(array);
+                Ok(())
+            }
+            Err(ref err) => Err(err.clone()),
+        }
+    }
+
+    pub unsafe fn parse_episode_number(&mut self, parse_episode_number: bool) {
+        ffi::options_parse_episode_number(&mut self.options, parse_episode_number)
+    }
+
+    pub unsafe fn parse_episode_title(&mut self, parse_episode_title: bool) {
+        ffi::options_parse_episode_title(&mut self.options, parse_episode_title)
+    }
+    pub unsafe fn parse_file_extension(&mut self, parse_file_extension: bool) {
+        ffi::options_parse_file_extension(&mut self.options, parse_file_extension)
+    }
+    pub unsafe fn parse_release_group(&mut self, parse_release_group: bool) {
+        ffi::options_parse_release_group(&mut self.options, parse_release_group)
+    }
+}
+
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ElementCategory {
@@ -152,6 +198,10 @@ impl Anitomy {
         &*(ffi::anitomy_elements(self.anitomy) as *const Elements)
     }
 
+    pub unsafe fn options(&mut self) -> &mut Options {
+        &mut *(ffi::anitomy_options(self.anitomy) as *mut Options)
+    }
+
     pub unsafe fn destroy(&mut self) {
         ffi::anitomy_destroy(self.anitomy)
     }
@@ -163,6 +213,7 @@ mod tests {
 
     const BLACK_BULLET_FILENAME: &'static str =
         "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
+    const TORADORA_FILENAME: &'static str = "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv";
 
     #[test]
     fn anitomy_new_destroy() {
@@ -323,6 +374,200 @@ mod tests {
                 let pair = elems.at(0).expect("at least one element");
                 assert_eq!(pair.category, ElementCategory::FileExtension);
                 assert_eq!(pair.value, "mp4");
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_allowed_delimiters() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert_eq!(elems.get(ElementCategory::AnimeTitle), "Toradora!");
+            }
+
+            {
+                ani.options()
+                    .allowed_delimiters("")
+                    .expect("expect no nul chars in string");
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert_eq!(elems.get(ElementCategory::AnimeTitle), "_Toradora!_");
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_ignored_strings() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+                assert_eq!(elems.get(ElementCategory::EpisodeTitle), "Tiger and Dragon");
+            }
+
+            {
+                ani.options()
+                    .ignored_strings(&["Dragon"])
+                    .expect("no nul chars in strings");
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+                assert_eq!(elems.get(ElementCategory::EpisodeTitle), "Tiger and");
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_episode_number() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 1);
+            }
+
+            {
+                ani.options().parse_episode_number(false);
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_episode_title() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+            }
+
+            {
+                ani.options().parse_episode_title(false);
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 0);
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_file_extension() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::FileExtension)) == 1);
+            }
+
+            {
+                ani.options().parse_file_extension(false);
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::FileExtension)) == 0);
+            }
+
+            ani.destroy();
+        }
+    }
+
+    #[test]
+    fn anitomy_options_parse_release_group() {
+        unsafe {
+            let mut ani = Anitomy::new().unwrap();
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 1);
+            }
+
+            {
+                ani.options().parse_release_group(false);
+            }
+
+            assert!(
+                ani.parse(TORADORA_FILENAME)
+                    .expect("no nul chars in filename")
+            );
+            {
+                let elems = ani.elements();
+                assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 0);
             }
 
             ani.destroy();
