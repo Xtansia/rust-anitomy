@@ -8,16 +8,22 @@ pub struct Options {
 }
 
 impl Options {
-    pub unsafe fn allowed_delimiters(&mut self, allowed_delimiters: &str) -> Result<(), NulError> {
-        let allowed_delimiters = CString::new(allowed_delimiters)?;
+    pub unsafe fn allowed_delimiters<S: AsRef<str>>(
+        &mut self,
+        allowed_delimiters: S,
+    ) -> Result<(), NulError> {
+        let allowed_delimiters = CString::new(allowed_delimiters.as_ref())?;
         ffi::options_allowed_delimiters(&mut self.options, allowed_delimiters.as_ptr());
         Ok(())
     }
 
-    pub unsafe fn ignored_strings(&mut self, ignored_strings: &[&str]) -> Result<(), NulError> {
+    pub unsafe fn ignored_strings<S: AsRef<str>>(
+        &mut self,
+        ignored_strings: &[S],
+    ) -> Result<(), NulError> {
         match ignored_strings
             .iter()
-            .map(|string| CString::new(*string))
+            .map(|string| CString::new(string.as_ref()))
             .collect::<Result<Vec<CString>, _>>()
         {
             Ok(ref ignored_strings) => {
@@ -189,8 +195,8 @@ impl Anitomy {
         }
     }
 
-    pub unsafe fn parse(&mut self, filename: &str) -> Result<bool, NulError> {
-        let filename = CString::new(filename)?;
+    pub unsafe fn parse<S: AsRef<str>>(&mut self, filename: S) -> Result<bool, NulError> {
+        let filename = CString::new(filename.as_ref())?;
         Ok(ffi::anitomy_parse(self.anitomy, filename.as_ptr()))
     }
 
