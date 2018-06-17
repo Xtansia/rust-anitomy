@@ -1,32 +1,32 @@
 //! # anitomy-sys
 //! *anitomy-sys* is a low-level Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
 //! video filenames.
-//! 
-//! Makes use of [anitomy-c](https://github.com/Xtansia/anitomy-c) a C ABI wrapper for Anitomy. 
-//! 
+//!
+//! Makes use of [anitomy-c](https://github.com/Xtansia/anitomy-c) a C ABI wrapper for Anitomy.
+//!
 //! ## Installation
 //! Add this to your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
 //! anitomy-sys = "0.1"
 //! ```
-//! 
+//!
 //! *anitomy-sys* will compile and statically link *anitomy-c* and *Anitomy* at build time, as such a compatible compiler is required.
-//! 
+//!
 //! ### Requirements
 //! * A C++14 compatible compiler
 //!   - GCC >= 5
 //!   - Clang >= 3.4 (According to the [Clang CXX status page](https://clang.llvm.org/cxx_status.html))
-//!   - [Visual Studio 2017](https://www.visualstudio.com/downloads/) 
+//!   - [Visual Studio 2017](https://www.visualstudio.com/downloads/)
 //!     OR [Build Tools for Visual Studio 2017](https://aka.ms/BuildTools)
-//! 
+//!
 //! ## Example
 //! ```no_run
 //! extern crate anitomy_sys;
-//! 
+//!
 //! use anitomy_sys::{Anitomy, ElementCategory};
 //! use std::ffi::CString;
-//! 
+//!
 //! fn main() {
 //!     let mut anitomy = unsafe { Anitomy::new() };
 //!     let filename = CString::new("[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv").expect("no nul chars in filename");
@@ -177,7 +177,7 @@ pub struct Elements {
 
 impl Elements {
     /// Determines whether there are no elements of a given category.
-    /// 
+    ///
     /// Passing `None` will check for any elements at all.
     pub unsafe fn empty<C: Into<Option<ElementCategory>>>(&self, category: C) -> bool {
         match category.into() {
@@ -189,7 +189,7 @@ impl Elements {
     }
 
     /// Counts the number of elements of a given category.
-    /// 
+    ///
     /// Passing `None` will count all elements.
     pub unsafe fn count<C: Into<Option<ElementCategory>>>(&self, category: C) -> usize {
         match category.into() {
@@ -250,7 +250,7 @@ impl Anitomy {
     }
 
     /// Parses a filename.
-    /// 
+    ///
     /// `true` and `false` return values correspond to what Anitomy classifies as succeeding or failing in parsing a filename.
     /// Such as an [`AnimeTitle`](::ElementCategory::AnimeTitle) element being found.
     pub unsafe fn parse<S: AsRef<CStr>>(&mut self, filename: S) -> bool {
@@ -268,7 +268,7 @@ impl Anitomy {
     }
 
     /// Destroy this instance.
-    /// 
+    ///
     /// This should always be called to free the associated C++ Anitomy instance and resources.
     pub unsafe fn destroy(&mut self) {
         ffi::anitomy_destroy(self.anitomy)
