@@ -1,0 +1,43 @@
+language: rust
+sudo: required
+dist: trusty
+
+rust:
+  - stable
+  - nightly
+
+os:
+  - linux
+  - osx
+
+osx_image:
+  - xcode8.3
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
+
+matrix:
+  allow_failures:
+    - rust: nightly
+
+before_install:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then 
+      export CC=gcc-5
+      export CXX=g++-5
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      export CC=clang
+      export CXX=clang++
+    fi
+
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+
+cache: cargo
+before_cache:
+  - chmod -R a+r $HOME/.cargo
