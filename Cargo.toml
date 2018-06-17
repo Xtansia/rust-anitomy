@@ -1,9 +1,10 @@
 [package]
 name = "anitomy"
-version = "0.1.0"
+version = "0.1.1"
 description = "Wrapper for Anitomy, the library for parsing anime video filenames"
 keywords = ["anitomy", "anime", "filenames", "parsing"]
 categories = ["api-bindings", "parsing"]
+readme = "README.md"
 authors = ["Thomas Farr <xtansia@xtansia.com>"]
 license = "MPL-2.0"
 homepage = "https://github.com/Xtansia/rust-anitomy"

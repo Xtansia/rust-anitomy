@@ -15,7 +15,7 @@
 //! ## Example
 //! ```no_run
 //! extern crate anitomy;
-//! 
+//!
 //! use anitomy::{Anitomy, ElementCategory};
 //!
 //! fn main() {
@@ -137,7 +137,7 @@ impl Options {
 
 impl Default for Options {
     /// Constructs a new instance of Options with the Anitomy defaults.
-    /// 
+    ///
     /// Equivalent to:
     /// ```ignore
     /// Options {
@@ -179,7 +179,7 @@ impl Elements {
     }
 
     /// Determines whether there are no elements of a given category.
-    /// 
+    ///
     /// Passing `None` will check for any elements at all.
     pub fn is_empty<C: Into<Option<ElementCategory>>>(&self, category: C) -> bool {
         match category.into() {
@@ -189,7 +189,7 @@ impl Elements {
     }
 
     /// Counts the number of elements of a given category.
-    /// 
+    ///
     /// Passing `None` will count all elements.
     pub fn count<C: Into<Option<ElementCategory>>>(&self, category: C) -> usize {
         match category.into() {
@@ -243,7 +243,7 @@ impl Anitomy {
     }
 
     /// Parses a filename.
-    /// 
+    ///
     /// The `Ok` and `Err` variants correspond to what Anitomy classifies as succeeding or failing in parsing a filename.
     /// Such as an [`AnimeTitle`](::ElementCategory::AnimeTitle) element being found.
     /// Regardless the parsed elements are returned either way.

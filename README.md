@@ -1,4 +1,6 @@
 # rust-anitomy
+[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg?style=flat-square&maxAge=2592000)](https://github.com/Xtansia/rust-anitomy/raw/master/LICENSE)
+[![Linux & OSX Build Status](https://travis-ci.com/Xtansia/rust-anitomy.svg?branch=master)](https://travis-ci.com/Xtansia/rust-anitomy)  
 *rust-anitomy* is a Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
 video filenames.
 
