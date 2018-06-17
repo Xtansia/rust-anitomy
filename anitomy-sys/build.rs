@@ -7,6 +7,7 @@ fn main() {
 
     if !compiler.is_like_msvc() {
         cc_build.flag("-std=c++14");
+        cc_build.flag("-fno-exceptions");
 
         if compiler.is_like_clang() && cfg!(target_os = "macos") {
             cc_build.cpp_set_stdlib(Some("c++"));
