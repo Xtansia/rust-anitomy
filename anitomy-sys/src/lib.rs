@@ -1,6 +1,6 @@
 pub mod ffi;
 
-use std::ffi::{CString, NulError};
+use std::ffi::CStr;
 
 #[repr(C)]
 pub struct Options {
@@ -8,35 +8,17 @@ pub struct Options {
 }
 
 impl Options {
-    pub unsafe fn allowed_delimiters<S: AsRef<str>>(
-        &mut self,
-        allowed_delimiters: S,
-    ) -> Result<(), NulError> {
-        let allowed_delimiters = CString::new(allowed_delimiters.as_ref())?;
-        ffi::options_allowed_delimiters(&mut self.options, allowed_delimiters.as_ptr());
-        Ok(())
+    pub unsafe fn allowed_delimiters<S: AsRef<CStr>>(&mut self, allowed_delimiters: S) {
+        ffi::options_allowed_delimiters(&mut self.options, allowed_delimiters.as_ref().as_ptr())
     }
 
-    pub unsafe fn ignored_strings<S: AsRef<str>>(
-        &mut self,
-        ignored_strings: &[S],
-    ) -> Result<(), NulError> {
-        match ignored_strings
+    pub unsafe fn ignored_strings<S: AsRef<CStr>>(&mut self, ignored_strings: &[S]) {
+        let array = ffi::string_array_new();
+        ignored_strings
             .iter()
-            .map(|string| CString::new(string.as_ref()))
-            .collect::<Result<Vec<CString>, _>>()
-        {
-            Ok(ref ignored_strings) => {
-                let array = ffi::string_array_new();
-                ignored_strings
-                    .iter()
-                    .for_each(|cstr| ffi::string_array_add(array, cstr.as_ptr()));
-                ffi::options_ignored_strings(&mut self.options, array);
-                ffi::string_array_free(array);
-                Ok(())
-            }
-            Err(ref err) => Err(err.clone()),
-        }
+            .for_each(|cstr| ffi::string_array_add(array, cstr.as_ref().as_ptr()));
+        ffi::options_ignored_strings(&mut self.options, array);
+        ffi::string_array_free(array);
     }
 
     pub unsafe fn parse_episode_number(&mut self, parse_episode_number: bool) {
@@ -186,19 +168,14 @@ pub struct Anitomy {
 }
 
 impl Anitomy {
-    pub unsafe fn new() -> Result<Self, ()> {
-        let ani = ffi::anitomy_new();
-
-        if !ani.is_null() {
-            Ok(Self { anitomy: ani })
-        } else {
-            Err(())
+    pub unsafe fn new() -> Self {
+        Self {
+            anitomy: ffi::anitomy_new(),
         }
     }
 
-    pub unsafe fn parse<S: AsRef<str>>(&mut self, filename: S) -> Result<bool, NulError> {
-        let filename = CString::new(filename.as_ref())?;
-        Ok(ffi::anitomy_parse(self.anitomy, filename.as_ptr()))
+    pub unsafe fn parse<S: AsRef<CStr>>(&mut self, filename: S) -> bool {
+        ffi::anitomy_parse(self.anitomy, filename.as_ref().as_ptr())
     }
 
     pub unsafe fn elements(&self) -> &Elements {
@@ -217,6 +194,7 @@ impl Anitomy {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::CString;
 
     const BLACK_BULLET_FILENAME: &'static str =
         "[異域字幕組][漆黑的子彈][Black Bullet][11-12][1280x720][繁体].mp4";
@@ -225,7 +203,7 @@ mod tests {
     #[test]
     fn anitomy_new_destroy() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let mut ani = Anitomy::new();
             ani.destroy();
         }
     }
@@ -233,12 +211,10 @@ mod tests {
     #[test]
     fn anitomy_parse_good_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(BLACK_BULLET_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
 
             ani.destroy();
         }
@@ -247,9 +223,10 @@ mod tests {
     #[test]
     fn anitomy_parse_bad_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new("").unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(!ani.parse("").expect("no nul chars in filename"));
+            assert!(!ani.parse(&filename));
 
             ani.destroy();
         }
@@ -258,12 +235,10 @@ mod tests {
     #[test]
     fn anitomy_elements_empty_good_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(BLACK_BULLET_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(!elems.empty(None));
@@ -279,9 +254,10 @@ mod tests {
     #[test]
     fn anitomy_elements_empty_bad_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new("").unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(!ani.parse("").expect("no nul chars in filename"));
+            assert!(!ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.empty(None));
@@ -297,12 +273,10 @@ mod tests {
     #[test]
     fn anitomy_elements_get_good_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(BLACK_BULLET_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
@@ -316,9 +290,10 @@ mod tests {
     #[test]
     fn anitomy_elements_get_bad_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new("").unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(!ani.parse("").expect("no nul chars in filename"));
+            assert!(!ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
@@ -332,12 +307,10 @@ mod tests {
     #[test]
     fn anitomy_elements_get_all_good_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(BLACK_BULLET_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 2);
@@ -351,9 +324,10 @@ mod tests {
     #[test]
     fn anitomy_elements_get_all_bad_input() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new("").unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(!ani.parse("").expect("no nul chars in filename"));
+            assert!(!ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
@@ -370,12 +344,10 @@ mod tests {
     #[test]
     fn anitomy_elements_at() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(BLACK_BULLET_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(BLACK_BULLET_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 let pair = elems.at(0).expect("at least one element");
@@ -390,12 +362,10 @@ mod tests {
     #[test]
     fn anitomy_options_allowed_delimiters() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
@@ -403,15 +373,10 @@ mod tests {
             }
 
             {
-                ani.options()
-                    .allowed_delimiters("")
-                    .expect("expect no nul chars in string");
+                ani.options().allowed_delimiters(&CString::new("").unwrap());
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
@@ -425,12 +390,10 @@ mod tests {
     #[test]
     fn anitomy_options_ignored_strings() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
@@ -439,14 +402,10 @@ mod tests {
 
             {
                 ani.options()
-                    .ignored_strings(&["Dragon"])
-                    .expect("no nul chars in strings");
+                    .ignored_strings(&[CString::new("Dragon").unwrap()]);
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
@@ -460,12 +419,10 @@ mod tests {
     #[test]
     fn anitomy_options_parse_episode_number() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 1);
@@ -475,10 +432,7 @@ mod tests {
                 ani.options().parse_episode_number(false);
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
@@ -491,12 +445,10 @@ mod tests {
     #[test]
     fn anitomy_options_parse_episode_title() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
@@ -506,10 +458,7 @@ mod tests {
                 ani.options().parse_episode_title(false);
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 0);
@@ -522,12 +471,10 @@ mod tests {
     #[test]
     fn anitomy_options_parse_file_extension() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::FileExtension)) == 1);
@@ -537,10 +484,7 @@ mod tests {
                 ani.options().parse_file_extension(false);
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::FileExtension)) == 0);
@@ -553,12 +497,10 @@ mod tests {
     #[test]
     fn anitomy_options_parse_release_group() {
         unsafe {
-            let mut ani = Anitomy::new().unwrap();
+            let filename = CString::new(TORADORA_FILENAME).unwrap();
+            let mut ani = Anitomy::new();
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 1);
@@ -568,10 +510,7 @@ mod tests {
                 ani.options().parse_release_group(false);
             }
 
-            assert!(
-                ani.parse(TORADORA_FILENAME)
-                    .expect("no nul chars in filename")
-            );
+            assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
                 assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 0);

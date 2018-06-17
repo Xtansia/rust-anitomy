@@ -1,12 +1,14 @@
 pub extern crate anitomy_sys;
 
+use std::ffi::CString;
+
 pub use anitomy_sys as sys;
 pub use sys::ElementCategory;
 pub type Element = sys::ElementPair;
 
 #[derive(Debug, Clone)]
 pub struct Options {
-    allowed_delimiters: String,
+    allowed_delimiters: Vec<char>,
     ignored_strings: Vec<String>,
     parse_episode_number: bool,
     parse_episode_title: bool,
@@ -19,13 +21,23 @@ impl Options {
         Self::default()
     }
 
-    pub fn allow_delimiters<S: AsRef<str>>(&mut self, delimiters: S) -> &mut Self {
-        self.allowed_delimiters = delimiters.as_ref().into();
+    pub fn allow_delimiter(&mut self, delimiter: char) -> &mut Self {
+        self.allowed_delimiters.push(delimiter);
+        self
+    }
+
+    pub fn allow_delimiters(&mut self, delimiters: &[char]) -> &mut Self {
+        self.allowed_delimiters = delimiters.iter().cloned().collect();
         self
     }
 
     pub fn ignore_string<S: AsRef<str>>(&mut self, string: S) -> &mut Self {
         self.ignored_strings.push(string.as_ref().into());
+        self
+    }
+
+    pub fn ignore_strings<S: AsRef<str>>(&mut self, strings: &[S]) -> &mut Self {
+        self.ignored_strings = strings.iter().map(AsRef::as_ref).map(str::to_owned).collect();
         self
     }
 
@@ -53,7 +65,7 @@ impl Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            allowed_delimiters: String::from(" _.&+,|"),
+            allowed_delimiters: vec![' ', '_', '.', '&', '+', ',', '|'],
             ignored_strings: Vec::new(),
             parse_episode_number: true,
             parse_episode_title: true,
@@ -129,17 +141,15 @@ pub struct Anitomy {
 impl Anitomy {
     pub fn new() -> Self {
         Self {
-            anitomy: unsafe { sys::Anitomy::new().expect("non-null Anitomy instance") },
+            anitomy: unsafe { sys::Anitomy::new() },
         }
     }
 
     pub fn parse<S: AsRef<str>>(&mut self, filename: S) -> Result<Elements, Elements> {
         unsafe {
-            if self
-                .anitomy
-                .parse(filename)
-                .expect("no nul chars in filename")
-            {
+            // TODO: Better handle the CString creation here?
+            let filename = CString::new(filename.as_ref()).expect("no nul chars in filename");
+            if self.anitomy.parse(&filename) {
                 Ok(Elements::new(self.anitomy.elements()))
             } else {
                 Err(Elements::new(self.anitomy.elements()))
@@ -149,11 +159,18 @@ impl Anitomy {
 
     pub fn set_options(&mut self, options: &Options) {
         unsafe {
+            // TODO: Better handle the CString creation here?
             let opts = self.anitomy.options();
-            opts.allowed_delimiters(&options.allowed_delimiters)
+            let allowed_delimiters = CString::new(options.allowed_delimiters.iter().filter(|&&c| c != '\0').collect::<String>())
                 .expect("no nul chars in allowed delimiters");
-            opts.ignored_strings(&options.ignored_strings)
+            opts.allowed_delimiters(&allowed_delimiters);
+            let ignored_strings = options
+                .ignored_strings
+                .iter()
+                .map(|s| CString::new(s.as_str()))
+                .collect::<Result<Vec<_>, _>>()
                 .expect("no nul chars in ignored strings");
+            opts.ignored_strings(&ignored_strings);
             opts.parse_episode_number(options.parse_episode_number);
             opts.parse_episode_title(options.parse_episode_title);
             opts.parse_file_extension(options.parse_file_extension);
@@ -271,7 +288,7 @@ mod tests {
         assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
         assert_eq!(elems.get(ElementCategory::AnimeTitle), Some("Toradora!"));
 
-        ani.set_options(Options::new().allow_delimiters(""));
+        ani.set_options(Options::new().allow_delimiters(&[]));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
