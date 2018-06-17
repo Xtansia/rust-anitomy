@@ -1,3 +1,5 @@
+//! The FFI bindings to [anitomy-c](https://github.com/Xtansia/anitomy-c).
+
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 

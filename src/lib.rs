@@ -161,7 +161,7 @@ impl Default for Options {
     }
 }
 
-/// Contains the elements parsed from a filename, as a result of calling [`Anitomy.parse`](::Anitomy::parse).
+/// Collection of [`Element`](::Element) instances parsed from a filename, as a result of calling [`Anitomy.parse`](::Anitomy::parse).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Elements {
     elements: Vec<Element>,
