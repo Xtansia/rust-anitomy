@@ -2,6 +2,16 @@
 *rust-anitomy* is a Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
 video filenames.
 
+## Installation
+Add this to your `Cargo.toml`:
+```toml
+[dependencies]
+anitomy = "0.1"
+```
+
+### Requirements
+As this crate depends on *anitomy-sys* it's requirements also apply, see [here](https://github.com/Xtansia/rust-anitomy/tree/master/anitomy-sys) for information about *anitomy-sys*.
+
 ## Example
 ```rust
 extern crate anitomy;
