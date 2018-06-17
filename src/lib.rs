@@ -37,7 +37,11 @@ impl Options {
     }
 
     pub fn ignore_strings<S: AsRef<str>>(&mut self, strings: &[S]) -> &mut Self {
-        self.ignored_strings = strings.iter().map(AsRef::as_ref).map(str::to_owned).collect();
+        self.ignored_strings = strings
+            .iter()
+            .map(AsRef::as_ref)
+            .map(str::to_owned)
+            .collect();
         self
     }
 
@@ -161,8 +165,13 @@ impl Anitomy {
         unsafe {
             // TODO: Better handle the CString creation here?
             let opts = self.anitomy.options();
-            let allowed_delimiters = CString::new(options.allowed_delimiters.iter().filter(|&&c| c != '\0').collect::<String>())
-                .expect("no nul chars in allowed delimiters");
+            let allowed_delimiters = CString::new(
+                options
+                    .allowed_delimiters
+                    .iter()
+                    .filter(|&&c| c != '\0')
+                    .collect::<String>(),
+            ).expect("no nul chars in allowed delimiters");
             opts.allowed_delimiters(&allowed_delimiters);
             let ignored_strings = options
                 .ignored_strings
