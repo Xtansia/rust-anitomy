@@ -1,5 +1,5 @@
-# anitomy-rs
-*anitomy-rs* is a Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
+# rust-anitomy
+*rust-anitomy* is a Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
 video filenames.
 
 ## Example

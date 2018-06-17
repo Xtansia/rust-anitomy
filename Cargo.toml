@@ -5,8 +5,8 @@ description = "Wrapper for Anitomy, the library for parsing anime video filename
 keywords = ["anitomy", "anime", "filenames", "parsing"]
 authors = ["Thomas Farr <xtansia@xtansia.com>"]
 license = "MPL-2.0"
-homepage = "https://github.com/Xtansia/anitomy-rs"
-repository = "https://github.com/Xtansia/anitomy-rs"
+homepage = "https://github.com/Xtansia/rust-anitomy"
+repository = "https://github.com/Xtansia/rust-anitomy"
 
 [dependencies]
 anitomy-sys = { path = "anitomy-sys", version = "0.1" }
