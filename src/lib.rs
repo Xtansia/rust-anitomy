@@ -3,10 +3,10 @@ pub extern crate anitomy_sys;
 use std::ffi::CString;
 
 pub use anitomy_sys as sys;
+pub use sys::Element;
 pub use sys::ElementCategory;
-pub type Element = sys::ElementPair;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     allowed_delimiters: Vec<char>,
     ignored_strings: Vec<String>,
@@ -79,7 +79,7 @@ impl Default for Options {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Elements {
     elements: Vec<Element>,
 }

@@ -100,8 +100,8 @@ impl From<ffi::element_category_t> for ElementCategory {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ElementPair {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Element {
     pub category: ElementCategory,
     pub value: String,
 }
@@ -130,12 +130,12 @@ impl Elements {
         }
     }
 
-    pub unsafe fn at(&self, pos: usize) -> Option<ElementPair> {
+    pub unsafe fn at(&self, pos: usize) -> Option<Element> {
         if pos < self.count(None) {
             let pair = ffi::elements_at(&self.elements, pos);
             let value = ffi::raw_into_string(pair.value);
             ffi::string_free(pair.value);
-            Some(ElementPair {
+            Some(Element {
                 category: ElementCategory::from(pair.category),
                 value: value,
             })
