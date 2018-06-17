@@ -1,6 +1,8 @@
 # anitomy-sys
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg?style=flat-square&maxAge=2592000)](https://github.com/Xtansia/rust-anitomy/raw/master/LICENSE)
-[![Linux & OSX Build Status](https://travis-ci.com/Xtansia/rust-anitomy.svg?branch=master)](https://travis-ci.com/Xtansia/rust-anitomy)  
+[![crates.io](https://img.shields.io/crates/v/anitomy-sys.svg)](https://crates.io/crates/anitomy-sys)
+[![docs.rs](https://docs.rs/anitomy-sys/badge.svg)](https://docs.rs/anitomy-sys/)
+[![Linux & OSX Build Status](https://travis-ci.com/Xtansia/rust-anitomy.svg?branch=master)](https://travis-ci.com/Xtansia/rust-anitomy)
+[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg?maxAge=2592000)](https://github.com/Xtansia/rust-anitomy/raw/master/LICENSE)  
 *anitomy-sys* is a low-level Rust binding for [Anitomy](https://github.com/erengy/anitomy) a C++ library for parsing anime
 video filenames.
 
