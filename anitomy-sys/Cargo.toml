@@ -1,6 +1,6 @@
 [package]
 name = "anitomy-sys"
-version = "0.1.0"
+version = "0.1.1"
 description = "Bindings for Anitomy, the library for parsing anime video filenames"
 keywords = ["anitomy", "anime", "filenames", "parsing", "bindings"]
 categories = ["external-ffi-bindings", "parsing"]
