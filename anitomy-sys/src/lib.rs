@@ -112,8 +112,8 @@ pub struct Elements {
 }
 
 impl Elements {
-    pub unsafe fn empty(&self, category: Option<ElementCategory>) -> bool {
-        match category {
+    pub unsafe fn empty<C: Into<Option<ElementCategory>>>(&self, category: C) -> bool {
+        match category.into() {
             Some(cat) => {
                 ffi::elements_empty_category(&self.elements, cat as ffi::element_category_t)
             }
@@ -121,8 +121,8 @@ impl Elements {
         }
     }
 
-    pub unsafe fn count(&self, category: Option<ElementCategory>) -> usize {
-        match category {
+    pub unsafe fn count<C: Into<Option<ElementCategory>>>(&self, category: C) -> usize {
+        match category.into() {
             Some(cat) => {
                 ffi::elements_count_category(&self.elements, cat as ffi::element_category_t)
             }
@@ -242,9 +242,9 @@ mod tests {
             {
                 let elems = ani.elements();
                 assert!(!elems.empty(None));
-                assert!(!elems.empty(Some(ElementCategory::AnimeTitle)));
+                assert!(!elems.empty(ElementCategory::AnimeTitle));
                 assert!(elems.count(None) > 0);
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 1);
             }
 
             ani.destroy()
@@ -261,9 +261,9 @@ mod tests {
             {
                 let elems = ani.elements();
                 assert!(elems.empty(None));
-                assert!(elems.empty(Some(ElementCategory::AnimeTitle)));
+                assert!(elems.empty(ElementCategory::AnimeTitle));
                 assert!(elems.count(None) == 0);
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 0);
             }
 
             ani.destroy()
@@ -279,7 +279,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 1);
                 assert_eq!(elems.get(ElementCategory::AnimeTitle), "Black Bullet");
             }
 
@@ -296,7 +296,7 @@ mod tests {
             assert!(!ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 0);
                 assert_eq!(elems.get(ElementCategory::AnimeTitle), "");
             }
 
@@ -313,7 +313,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 2);
+                assert!(elems.count(ElementCategory::EpisodeNumber) == 2);
                 assert_eq!(elems.get_all(ElementCategory::EpisodeNumber), ["11", "12"]);
             }
 
@@ -330,7 +330,7 @@ mod tests {
             assert!(!ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+                assert!(elems.count(ElementCategory::EpisodeNumber) == 0);
                 assert_eq!(
                     elems.get_all(ElementCategory::EpisodeNumber),
                     Vec::<String>::new()
@@ -368,7 +368,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 1);
                 assert_eq!(elems.get(ElementCategory::AnimeTitle), "Toradora!");
             }
 
@@ -379,7 +379,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+                assert!(elems.count(ElementCategory::AnimeTitle) == 1);
                 assert_eq!(elems.get(ElementCategory::AnimeTitle), "_Toradora!_");
             }
 
@@ -396,7 +396,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+                assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
                 assert_eq!(elems.get(ElementCategory::EpisodeTitle), "Tiger and Dragon");
             }
 
@@ -408,7 +408,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+                assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
                 assert_eq!(elems.get(ElementCategory::EpisodeTitle), "Tiger and");
             }
 
@@ -425,7 +425,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 1);
+                assert!(elems.count(ElementCategory::EpisodeNumber) == 1);
             }
 
             {
@@ -435,7 +435,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+                assert!(elems.count(ElementCategory::EpisodeNumber) == 0);
             }
 
             ani.destroy();
@@ -451,7 +451,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+                assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
             }
 
             {
@@ -461,7 +461,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 0);
+                assert!(elems.count(ElementCategory::EpisodeTitle) == 0);
             }
 
             ani.destroy();
@@ -477,7 +477,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::FileExtension)) == 1);
+                assert!(elems.count(ElementCategory::FileExtension) == 1);
             }
 
             {
@@ -487,7 +487,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::FileExtension)) == 0);
+                assert!(elems.count(ElementCategory::FileExtension) == 0);
             }
 
             ani.destroy();
@@ -503,7 +503,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 1);
+                assert!(elems.count(ElementCategory::ReleaseGroup) == 1);
             }
 
             {
@@ -513,7 +513,7 @@ mod tests {
             assert!(ani.parse(&filename));
             {
                 let elems = ani.elements();
-                assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 0);
+                assert!(elems.count(ElementCategory::ReleaseGroup) == 0);
             }
 
             ani.destroy();

@@ -91,15 +91,15 @@ impl Elements {
         }
     }
 
-    pub fn is_empty(&self, category: Option<ElementCategory>) -> bool {
-        match category {
+    pub fn is_empty<C: Into<Option<ElementCategory>>>(&self, category: C) -> bool {
+        match category.into() {
             Some(category) => !self.elements.iter().any(|elem| elem.category == category),
             None => self.elements.is_empty(),
         }
     }
 
-    pub fn count(&self, category: Option<ElementCategory>) -> usize {
-        match category {
+    pub fn count<C: Into<Option<ElementCategory>>>(&self, category: C) -> usize {
+        match category.into() {
             Some(category) => self
                 .elements
                 .iter()
@@ -214,9 +214,9 @@ mod tests {
             .parse(BLACK_BULLET_FILENAME)
             .expect("successfully parse filename");
         assert!(!elems.is_empty(None));
-        assert!(!elems.is_empty(Some(ElementCategory::AnimeTitle)));
+        assert!(!elems.is_empty(ElementCategory::AnimeTitle));
         assert!(elems.count(None) > 0);
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 1);
     }
 
     #[test]
@@ -225,9 +225,9 @@ mod tests {
             .parse("")
             .expect_err("fail to parse filename");
         assert!(elems.is_empty(None));
-        assert!(elems.is_empty(Some(ElementCategory::AnimeTitle)));
+        assert!(elems.is_empty(ElementCategory::AnimeTitle));
         assert!(elems.count(None) == 0);
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 0);
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
         let elems = Anitomy::new()
             .parse(BLACK_BULLET_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 1);
         assert_eq!(elems.get(ElementCategory::AnimeTitle), Some("Black Bullet"));
     }
 
@@ -244,7 +244,7 @@ mod tests {
         let elems = Anitomy::new()
             .parse("")
             .expect_err("fail to parse filename");
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 0);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 0);
         assert_eq!(elems.get(ElementCategory::AnimeTitle), None);
     }
 
@@ -253,7 +253,7 @@ mod tests {
         let elems = Anitomy::new()
             .parse(BLACK_BULLET_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 2);
+        assert!(elems.count(ElementCategory::EpisodeNumber) == 2);
         assert_eq!(elems.get_all(ElementCategory::EpisodeNumber), ["11", "12"]);
     }
 
@@ -262,7 +262,7 @@ mod tests {
         let elems = Anitomy::new()
             .parse("")
             .expect_err("fail to parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+        assert!(elems.count(ElementCategory::EpisodeNumber) == 0);
         assert_eq!(
             elems.get_all(ElementCategory::EpisodeNumber),
             Vec::<&str>::new()
@@ -285,7 +285,7 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 1);
         assert_eq!(elems.get(ElementCategory::AnimeTitle), Some("Toradora!"));
 
         ani.set_options(Options::new().allow_delimiters(&[]));
@@ -293,7 +293,7 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::AnimeTitle)) == 1);
+        assert!(elems.count(ElementCategory::AnimeTitle) == 1);
         assert_eq!(elems.get(ElementCategory::AnimeTitle), Some("_Toradora!_"));
     }
 
@@ -303,15 +303,18 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
-        assert_eq!(elems.get(ElementCategory::EpisodeTitle), Some("Tiger and Dragon"));
+        assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
+        assert_eq!(
+            elems.get(ElementCategory::EpisodeTitle),
+            Some("Tiger and Dragon")
+        );
 
         ani.set_options(Options::new().ignore_string("Dragon"));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+        assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
         assert_eq!(elems.get(ElementCategory::EpisodeTitle), Some("Tiger and"));
     }
 
@@ -321,14 +324,14 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 1);
+        assert!(elems.count(ElementCategory::EpisodeNumber) == 1);
 
         ani.set_options(Options::new().parse_episode_number(false));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeNumber)) == 0);
+        assert!(elems.count(ElementCategory::EpisodeNumber) == 0);
     }
 
     #[test]
@@ -337,14 +340,14 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 1);
+        assert!(elems.count(ElementCategory::EpisodeTitle) == 1);
 
         ani.set_options(Options::new().parse_episode_title(false));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::EpisodeTitle)) == 0);
+        assert!(elems.count(ElementCategory::EpisodeTitle) == 0);
     }
 
     #[test]
@@ -353,14 +356,14 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::FileExtension)) == 1);
+        assert!(elems.count(ElementCategory::FileExtension) == 1);
 
         ani.set_options(Options::new().parse_file_extension(false));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::FileExtension)) == 0);
+        assert!(elems.count(ElementCategory::FileExtension) == 0);
     }
 
     #[test]
@@ -369,13 +372,13 @@ mod tests {
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 1);
+        assert!(elems.count(ElementCategory::ReleaseGroup) == 1);
 
         ani.set_options(Options::new().parse_release_group(false));
 
         let elems = ani
             .parse(TORADORA_FILENAME)
             .expect("successfully parse filename");
-        assert!(elems.count(Some(ElementCategory::ReleaseGroup)) == 0);
+        assert!(elems.count(ElementCategory::ReleaseGroup) == 0);
     }
 }
