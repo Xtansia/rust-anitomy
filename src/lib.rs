@@ -1,8 +1,8 @@
-pub extern crate anitomy_sys;
+#[doc(hidden)]
+pub extern crate anitomy_sys as sys;
 
 use std::ffi::CString;
 
-pub use anitomy_sys as sys;
 pub use sys::Element;
 pub use sys::ElementCategory;
 
@@ -130,10 +130,10 @@ impl Elements {
 }
 
 impl std::ops::Deref for Elements {
-    type Target = [Element];
+    type Target = Vec<Element>;
 
     #[inline]
-    fn deref(&self) -> &[Element] {
+    fn deref(&self) -> &Self::Target {
         &self.elements
     }
 }
