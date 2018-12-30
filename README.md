@@ -14,7 +14,7 @@ anitomy = "0.1"
 ```
 
 ### Requirements
-As this crate depends on *anitomy-sys* it's requirements also apply, see [here](https://github.com/Xtansia/rust-anitomy/tree/master/anitomy-sys) for information about *anitomy-sys*.
+As this crate depends on *anitomy-sys* it's requirements also apply, see [Xtansia/rust-anitomy-sys](https://github.com/Xtansia/rust-anitomy-sys) for information about *anitomy-sys*.
 
 ## Example
 ```rust
