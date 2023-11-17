@@ -1,6 +1,6 @@
 [package]
 name = "anitomy"
-version = "0.1.2"
+version = "0.2.0"
 description = "Wrapper for Anitomy, the library for parsing anime video filenames"
 keywords = ["anitomy", "anime", "filenames", "parsing"]
 categories = ["api-bindings", "parsing"]
@@ -11,4 +11,4 @@ homepage = "https://github.com/Xtansia/rust-anitomy"
 repository = "https://github.com/Xtansia/rust-anitomy"
 
 [dependencies]
-anitomy-sys = { version = "0.1" }
+anitomy-sys = { version = "0.2" }
