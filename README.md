@@ -10,7 +10,7 @@ video filenames.
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-anitomy = "0.1"
+anitomy = "0.2"
 ```
 
 ### Requirements
